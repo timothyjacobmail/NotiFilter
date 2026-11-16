@@ -221,4 +221,26 @@
     <!-- region system -->
     <string name="foreground_notification_content">NotiFilter is running</string>
     <!-- endregion -->
+    <string name="match_case">Case match</string>
+    <string name="match_case_on">On (case sensitive)</string>
+    <string name="match_case_off">Off (ignore case)</string>
+    <string name="badge_short">Show an app notification bubble</string>
+    <string name="badge_long">Display a notification bubble on the app</string>
+    <string name="badge_explanation">Posts a quiet notification for each match and shows a badge on the NotiFilter icon. The launcher controls whether a dot or number appears. Clear these notifications to clear the badge. Original notifications stay unchanged.</string>
+    <string name="badge_channel_name">Matched notification bubbles</string>
+    <string name="badge_permission_description">Allow NotiFilter to post notifications so matching notifications can show an app-icon badge.</string>
+    <string name="badge_settings">Open badge settings</string>
+    <string name="badge_settings_advice">Enable App icon badges in system notification settings. On Vivo, this switch can be off even when notifications are allowed.</string>
+    <string name="glow_short">Show pulsing blue/red glow at saved position</string>
+    <string name="glow_long">Show a pulsing blue/red glow at a manually selected home-screen position</string>
+    <string name="glow_advice">Position the glow around your home-screen icon, then save this filter. It appears at that fixed position on any home-screen page when this filter matches. Usage Access hides it in other apps. It remains active until the matching notification is removed. Opening the app only hides the glow; it returns on the home screen if the notification still exists. Reposition it if you move the icon. One shared position is used for all glow filters.</string>
+    <string name="glow_enable">Allow display over other apps</string>
+    <string name="glow_place">Position pulsing glow</string>
+    <string name="glow_clear">Clear pulsing glow</string>
+    <string name="glow_drag">Drag the pulsing ring onto your icon</string>
+    <string name="glow_save">Save position</string>
+    <string name="glow_cancel">Cancel</string>
+    <string name="glow_smaller">Smaller</string>
+    <string name="glow_larger">Larger</string>
+    <string name="glow_usage_enable">Allow Usage Access for home-screen detection</string>
 </resources>

@@ -70,6 +70,23 @@ class FilterTest {
     }
 
     @Test
+    fun caseMatchingAppliesToEveryRegexTarget() {
+        val notification = Notification("HOW ARE YOU", "Hello WORLD", "example", 0)
+        val cases = listOf(
+            Filter(Any, "how are you", Action.BADGE, RegexTarget.TITLE),
+            Filter(Any, "hello world", Action.BADGE, RegexTarget.CONTENT),
+            Filter(Any, "hello world", Action.BADGE, RegexTarget.OR),
+            Filter(Any, "how are you", Action.BADGE, RegexTarget.AND, "hello world"),
+        )
+        cases.forEach { filter ->
+            assertFalse(filter.matchesTextOf(notification))
+            assertTrue(filter.copy(matchCase = false).matchesTextOf(notification))
+            assertFalse(filter.copy(matchCase = false).matchesTextOf(notification.copy(title = "unrelated", content = "unrelated")))
+        }
+        kotlin.test.assertEquals(Action.BADGE, Action.fromString("BADGE"))
+    }
+
+    @Test
     fun Filter_isNotOnCooldown() {
         val oldAndEmpty = Notification("", "", "", 0)
         val oldFilteredByThis = oldAndEmpty.copy(filterId = 0)

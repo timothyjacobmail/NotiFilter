@@ -43,6 +43,9 @@ data class Filter(
 
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
+
+    @ColumnInfo(defaultValue = "1")
+    val matchCase: Boolean = true,
 ) {
     init {
         if (regexTarget == RegexTarget.AND) {
@@ -65,18 +68,18 @@ data class Filter(
     fun matchesTextOf(notification: Notification): Boolean {
         return when (regexTarget) {
             RegexTarget.TITLE ->
-                regexPattern.containsMatchIn(notification.title)
+                regexPattern.containsMatchIn(notification.title, matchCase)
 
             RegexTarget.CONTENT ->
-                regexPattern.containsMatchIn(notification.content)
+                regexPattern.containsMatchIn(notification.content, matchCase)
 
             RegexTarget.OR ->
-                regexPattern.containsMatchIn(notification.title) ||
-                        regexPattern.containsMatchIn(notification.content)
+                regexPattern.containsMatchIn(notification.title, matchCase) ||
+                        regexPattern.containsMatchIn(notification.content, matchCase)
 
             RegexTarget.AND ->
-                regexPattern.containsMatchIn(notification.title) &&
-                        secondaryRegexPattern!!.containsMatchIn(notification.content)
+                regexPattern.containsMatchIn(notification.title, matchCase) &&
+                        secondaryRegexPattern!!.containsMatchIn(notification.content, matchCase)
 
             RegexTarget.EXPRESSION ->
                 regexPattern.evaluateAgainst(notification)

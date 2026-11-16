@@ -54,3 +54,14 @@ Package ID: `co.adityarajput.notifilter`
 
 SHA256 hash of signing certificate:
 `56:0A:30:9B:4F:01:AC:3D:28:65:EA:C6:E3:C3:35:59:EC:C7:E9:AD:8E:A7:9E:CD:58:D2:56:B4:B6:45:8A:0E`
+
+
+## Custom fork features
+
+This fork adds per-filter Case match On/Off controls, a NotiFilter icon-badge action with Vivo support, and a manually positioned home-screen glow.
+
+Select **Show a pulsing blue/red glow at a manually selected home-screen position** in the action page, then scroll to **Position pulsing glow**. Grant Display over other apps and Usage Access, drag and resize the ring, save its position, and finish saving the filter. All glow filters share one position on every home-screen page. Accessibility access is not required.
+
+Matching notifications keep the glow active until they are removed. Opening another app hides the overlay without clearing pending matches. Returning home restores the pulse while a matching notification remains. If the source app removes its notification when opened, that also clears the corresponding match. Clear pulsing glow manually resets pending matches.
+
+Build and tests: `gradlew.bat :app:assembleDebug :app:assembleDebugAndroidTest :app:testDebugUnitTest`. The ManualGlowTest device tests cover independent notification removal and retention while opening an app.

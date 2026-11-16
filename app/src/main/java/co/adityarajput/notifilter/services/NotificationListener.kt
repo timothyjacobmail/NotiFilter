@@ -165,9 +165,18 @@ class NotificationListener : NotificationListenerService() {
         Logger.i("NotificationListener", "Listener connected")
         serviceScope.launch { TextToSpeech.initialize(this@NotificationListener) }
         requestListenerHints(0)
+        BadgeNotifications.refreshLauncherCount(this)
+        IconGlow.retain(this, activeNotifications.map { it.key }.toSet())
+        if (IconGlow.isActive(this)) ManualGlow.get(this).refreshGlow()
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
+        // Never filter our own output: an all-app rule must not create a notification loop.
+        if (sbn.packageName == packageName) {
+            if (sbn.notification.channelId == BadgeNotifications.CHANNEL_ID)
+                BadgeNotifications.refreshLauncherCount(this)
+            return
+        }
         if (sbn.notification.flags and FLAG_GROUP_SUMMARY != 0) {
             Logger.d(
                 "NotificationListener",
@@ -290,6 +299,12 @@ class NotificationListener : NotificationListenerService() {
                 requestListenerHints(0)
             }
 
+            is Action.GLOW -> IconGlow.record(this, sbn.key)
+
+            is Action.BADGE -> {
+                BadgeNotifications.post(this, sbn.key, notification.title.ifBlank { filter.app.name }, notification.content)
+            }
+
             is Action.ALERT -> {
                 notificationManager.notify(
                     Constants.ALERT_NOTIFICATION_ID,
@@ -385,6 +400,14 @@ class NotificationListener : NotificationListenerService() {
             this@NotificationListener.notifications = repository.notifications().first()
             Logger.d("NotificationListener", "Notifications updated: $notifications")
         }
+    }
+
+    override fun onNotificationRemoved(sbn: StatusBarNotification) {
+        IconGlow.remove(this, sbn.key)
+        if (sbn.packageName == packageName && sbn.notification.channelId == BadgeNotifications.CHANNEL_ID)
+            BadgeNotifications.refreshLauncherCount(this)
+        IconGlow.retain(this, activeNotifications.map { it.key }.toSet())
+        if (IconGlow.isActive(this)) ManualGlow.get(this).refreshGlow()
     }
 
     fun dismissNotification(key: String, isClearable: Boolean) {

@@ -64,6 +64,8 @@ fun MissingPermissionsDialog(
                         Text(
                             stringResource(
                                 when (permission) {
+                                    Permission.USAGE_ACCESS -> R.string.glow_usage_enable
+                                    Permission.OVERLAY -> R.string.glow_enable
                                     Permission.ACCESSIBILITY_SERVICE -> R.string.explain_accessibility_service_permission
                                     Permission.POST_NOTIFICATIONS -> R.string.explain_post_notifications_permission
                                     Permission.NOTIFICATION_POLICY -> R.string.explain_notification_policy_permission

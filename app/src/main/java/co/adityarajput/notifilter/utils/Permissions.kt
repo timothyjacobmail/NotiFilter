@@ -25,9 +25,16 @@ enum class Permission {
     POST_NOTIFICATIONS,
     NOTIFICATION_POLICY,
     SCHEDULE_EXACT_ALARM,
+    OVERLAY,
+    USAGE_ACCESS,
 }
 
 fun Context.isGranted(permission: Permission) = when (permission) {
+    Permission.USAGE_ACCESS -> (getSystemService(android.app.AppOpsManager::class.java)
+        .unsafeCheckOpNoThrow(android.app.AppOpsManager.OPSTR_GET_USAGE_STATS, android.os.Process.myUid(), packageName) == android.app.AppOpsManager.MODE_ALLOWED)
+
+    Permission.OVERLAY -> Settings.canDrawOverlays(this)
+
     Permission.NOTIFICATION_LISTENER ->
         Settings.Secure.getString(contentResolver, "enabled_notification_listeners")
             ?.contains(packageName) ?: false
@@ -60,6 +67,10 @@ fun Context.isGranted(permissions: Iterable<Permission>) =
 @SuppressLint("BatteryLife")
 fun Context.request(permission: Permission, remove: Boolean = false) = try {
     when (permission) {
+        Permission.USAGE_ACCESS -> startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS, "package:$packageName".toUri()))
+
+        Permission.OVERLAY -> startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, "package:$packageName".toUri()))
+
         Permission.NOTIFICATION_LISTENER ->
             startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
 
@@ -99,10 +110,14 @@ fun Context.request(permission: Permission, remove: Boolean = false) = try {
 }
 
 fun permissionsRequired(filters: List<Filter>) = buildList {
+    if (filters.any { it.action is Action.GLOW }) {
+        add(Permission.OVERLAY)
+        add(Permission.USAGE_ACCESS)
+    }
     if (filters.any { it.action is Action.TAP_NOTIFICATION })
         add(Permission.ACCESSIBILITY_SERVICE)
 
-    if (filters.any { it.action is Action.ALERT || it.action is Action.REPLACE })
+    if (filters.any { it.action is Action.ALERT || it.action is Action.REPLACE || it.action is Action.BADGE })
         add(Permission.POST_NOTIFICATIONS)
 
     if (filters.any { it.action is Action.DISTURB })

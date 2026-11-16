@@ -38,6 +38,12 @@ sealed class Action {
     data object ALERT : Action()
 
     @Serializable
+    data object BADGE : Action()
+
+    @Serializable
+    data object GLOW : Action()
+
+    @Serializable
     data class DISTURB(val pauseLength: Int) : Action()
 
     @Serializable
@@ -69,6 +75,8 @@ sealed class Action {
             is TAP_BUTTON -> getString(R.string.tap_button_short, buttonRegex)
             is MUTE -> getString(R.string.mute_short)
             is ALERT -> getString(R.string.alert_short)
+            is BADGE -> getString(R.string.badge_short)
+            is GLOW -> getString(R.string.glow_short)
 
             is DELAY -> if (delayLength == null) getString(R.string.delay_short) else getString(
                 R.string.delay_by_short,
@@ -112,6 +120,8 @@ sealed class Action {
             is DEBOUNCE -> R.string.debounce_long
             is MUTE -> R.string.mute_long
             is ALERT -> R.string.alert_long
+            is BADGE -> R.string.badge_long
+            is GLOW -> R.string.glow_long
             is DISTURB -> R.string.disturb_long
             is DISMISS_STALE -> R.string.dismiss_stale_long
             is REPLACE -> R.string.replace_long
@@ -125,7 +135,7 @@ sealed class Action {
         val entries by lazy {
             listOf(
                 DISMISS, TAP_NOTIFICATION, TAP_BUTTON(""), BATCH(3),
-                DELAY(), DEBOUNCE(2), MUTE, ALERT, DISTURB(5), DISMISS_STALE(15),
+                DELAY(), DEBOUNCE(2), MUTE, ALERT, BADGE, GLOW, DISTURB(5), DISMISS_STALE(15),
                 REPLACE($$"${app} - ${title}", $$"${content}"), READ($$"${title}: ${content}"),
             )
         }
@@ -140,6 +150,10 @@ sealed class Action {
             "MUTE" -> MUTE
 
             "ALERT" -> ALERT
+
+            "BADGE" -> BADGE
+
+            "GLOW" -> GLOW
 
             else -> {
                 TAP_BUTTON_REGEX.matchEntire(value)?.groupValues?.let {

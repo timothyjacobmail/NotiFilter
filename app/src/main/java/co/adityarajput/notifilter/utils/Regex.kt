@@ -7,7 +7,7 @@ import net.fellbaum.jemoji.EmojiManager
 const val EMOJI_PATTERN_DISPLAY = "\\p{Emoji}"
 private const val EMOJI_PATTERN_INTERNAL = "\uE010"
 
-fun String.containsMatchIn(input: String): Boolean {
+fun String.containsMatchIn(input: String, matchCase: Boolean = true): Boolean {
     var pattern = this
     var text = input
 
@@ -16,7 +16,7 @@ fun String.containsMatchIn(input: String): Boolean {
         text = EmojiManager.replaceAllEmojis(text, EMOJI_PATTERN_INTERNAL)
     }
 
-    return Regex(pattern).containsMatchIn(text)
+    return Regex(pattern, if (matchCase) emptySet() else setOf(RegexOption.IGNORE_CASE)).containsMatchIn(text)
 }
 
 fun String.replaceWithNotificationData(notification: Notification, allPackages: List<App>) =

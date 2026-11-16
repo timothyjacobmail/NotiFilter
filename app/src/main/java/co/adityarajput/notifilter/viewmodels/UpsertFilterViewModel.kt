@@ -47,12 +47,13 @@ class UpsertFilterViewModel(
         val widgetEnabled: Boolean = false,
         val priority: Int = 0,
         val cooldown: Long? = null,
+        val matchCase: Boolean = true,
     ) {
         constructor(filter: Filter) : this(
             filter.id, null, filter.app, filter.regexTarget,
             filter.regexPattern, filter.secondaryRegexPattern ?: "",
             filter.action, filter.schedule, filter.historyEnabled, filter.widgetEnabled,
-            filter.priority, filter.cooldown,
+            filter.priority, filter.cooldown, filter.matchCase,
         )
 
         fun toFilter() = Filter(
@@ -61,6 +62,7 @@ class UpsertFilterViewModel(
             schedule, true, historyEnabled, widgetEnabled,
             if (filterId == 0) Int.MAX_VALUE else priority, if (cooldown == 0L) null else cooldown,
             id = filterId,
+            matchCase = matchCase,
         )
     }
 
@@ -170,15 +172,15 @@ class UpsertFilterViewModel(
             val warnings = mutableListOf<FormWarning>()
             if (
                 regexTarget != RegexTarget.CONTENT
-                && !values.queryPattern.containsMatchIn(notification.title)
+                && !values.queryPattern.containsMatchIn(notification.title, values.matchCase)
             ) warnings.add(FormWarning.REGEX_DOESNT_MATCH_TITLE)
             if (
                 (regexTarget == RegexTarget.CONTENT || regexTarget == RegexTarget.OR)
-                && !values.queryPattern.containsMatchIn(notification.content)
+                && !values.queryPattern.containsMatchIn(notification.content, values.matchCase)
             ) warnings.add(FormWarning.REGEX_DOESNT_MATCH_CONTENT)
             if (
                 regexTarget == RegexTarget.AND &&
-                !values.secondaryQueryPattern.containsMatchIn(notification.content)
+                !values.secondaryQueryPattern.containsMatchIn(notification.content, values.matchCase)
             ) warnings.add(FormWarning.REGEX_DOESNT_MATCH_CONTENT)
 
             return warnings

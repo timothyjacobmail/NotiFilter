@@ -82,7 +82,7 @@ fun UpsertFilterScreen(
             ) {
                 Column(
                     Modifier.fillMaxWidth().run {
-                        if (it == FormPage.ACTION) this.verticalScroll(rememberScrollState())
+                        if (it == FormPage.ACTION || it == FormPage.PATTERN) this.verticalScroll(rememberScrollState())
                         else this
                     },
                     Arrangement.spacedBy(dimensionResource(R.dimen.padding_medium)),
@@ -411,6 +411,22 @@ private fun PatternPage(viewModel: UpsertFilterViewModel) {
             fontWeight = FontWeight.Normal,
         )
     }
+    if (viewModel.state.values.regexTarget != RegexTarget.EXPRESSION) {
+        Text(stringResource(R.string.match_case), style = MaterialTheme.typography.labelLarge)
+        Row {
+            listOf(true to R.string.match_case_on, false to R.string.match_case_off).forEach { (enabled, label) ->
+                Row(
+                    Modifier.weight(1f).selectable(viewModel.state.values.matchCase == enabled) {
+                        viewModel.updateForm(viewModel.state.page, viewModel.state.values.copy(matchCase = enabled))
+                    },
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    RadioButton(viewModel.state.values.matchCase == enabled, null)
+                    Text(stringResource(label), style = MaterialTheme.typography.labelMedium)
+                }
+            }
+        }
+    }
     OutlinedTextField(
         viewModel.state.values.queryPattern,
         {
@@ -525,6 +541,33 @@ private fun ColumnScope.ActionPage(viewModel: UpsertFilterViewModel) {
         style = MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.Normal,
     )
+    if (viewModel.state.values.action is Action.BADGE) {
+        Text(stringResource(R.string.badge_explanation), style = MaterialTheme.typography.bodySmall)
+        Text(stringResource(R.string.badge_settings_advice), style = MaterialTheme.typography.bodySmall)
+        OutlinedButton({
+            context.startActivity(
+                android.content.Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                    .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName),
+            )
+        }) { Text(stringResource(R.string.badge_settings)) }
+    }
+    if (viewModel.state.values.action is Action.GLOW) {
+        Text(stringResource(R.string.glow_advice), style = MaterialTheme.typography.bodySmall)
+        if (!context.isGranted(Permission.OVERLAY)) {
+            OutlinedButton({ context.request(Permission.OVERLAY) }) {
+                Text(stringResource(R.string.glow_enable))
+            }
+        }
+        if (!context.isGranted(Permission.USAGE_ACCESS)) {
+            OutlinedButton({ context.request(Permission.USAGE_ACCESS) }) { Text(stringResource(R.string.glow_usage_enable)) }
+        }
+        if (context.isGranted(Permission.OVERLAY) && context.isGranted(Permission.USAGE_ACCESS)) {
+            OutlinedButton({ ManualGlow.get(context).beginPlacement() }) {
+                Text(stringResource(R.string.glow_place))
+            }
+        }
+        OutlinedButton({ IconGlow.clear(context) }) { Text(stringResource(R.string.glow_clear)) }
+    }
     Action.entries.forEach {
         Row(
             Modifier
@@ -703,8 +746,8 @@ private fun ColumnScope.ActionPage(viewModel: UpsertFilterViewModel) {
             }
         }
         AnimatedVisibility(
-            it is Action.ALERT
-                    && viewModel.state.values.action is Action.ALERT
+            (it is Action.ALERT || it is Action.BADGE)
+                    && viewModel.state.values.action.isOfType(it)
                     && !hasPermissions.getValue(Permission.POST_NOTIFICATIONS),
         ) {
             Column(
@@ -713,7 +756,7 @@ private fun ColumnScope.ActionPage(viewModel: UpsertFilterViewModel) {
                     .padding(start = dimensionResource(R.dimen.padding_medium)),
                 Arrangement.spacedBy(dimensionResource(R.dimen.padding_medium)),
             ) {
-                ErrorText(R.string.alert_notifications_description)
+                ErrorText(if (it is Action.BADGE) R.string.badge_permission_description else R.string.alert_notifications_description)
                 Button(
                     { context.request(Permission.POST_NOTIFICATIONS) },
                     Modifier.align(Alignment.CenterHorizontally),
