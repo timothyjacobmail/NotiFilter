@@ -1,0 +1,5 @@
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="250dp" android:minHeight="48dp" android:minResizeWidth="80dp" android:minResizeHeight="48dp"
+    android:targetCellWidth="4" android:targetCellHeight="1" android:resizeMode="horizontal|vertical"
+    android:initialLayout="@layout/app_badge_widget" android:configure="co.adityarajput.notifilter.AppBadgeWidgetConfigureActivity"
+    android:widgetFeatures="reconfigurable" android:widgetCategory="home_screen|keyguard" android:updatePeriodMillis="1800000" />

@@ -14,6 +14,7 @@ import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import androidx.core.app.NotificationCompat
 import co.adityarajput.notifilter.Constants
+import co.adityarajput.notifilter.AppBadgeWidget
 import co.adityarajput.notifilter.R
 import co.adityarajput.notifilter.data.AppContainer
 import co.adityarajput.notifilter.data.Cache
@@ -130,6 +131,7 @@ class NotificationListener : NotificationListenerService() {
             notifications = repository.notifications().first()
             repository.filters().collectLatest { newFilters ->
                 filters = newFilters
+                AppBadgeWidget.refresh(this@NotificationListener)
                 Logger.d("NotificationListener", "Filters updated: $filters")
             }
         }
@@ -163,6 +165,7 @@ class NotificationListener : NotificationListenerService() {
     override fun onListenerConnected() {
         super.onListenerConnected()
         Logger.i("NotificationListener", "Listener connected")
+        AppBadgeWidget.refresh(this)
         serviceScope.launch { TextToSpeech.initialize(this@NotificationListener) }
         requestListenerHints(0)
         BadgeNotifications.refreshLauncherCount(this)
@@ -171,6 +174,7 @@ class NotificationListener : NotificationListenerService() {
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
+        AppBadgeWidget.refresh(this)
         // Never filter our own output: an all-app rule must not create a notification loop.
         if (sbn.packageName == packageName) {
             if (sbn.notification.channelId == BadgeNotifications.CHANNEL_ID)
@@ -403,6 +407,7 @@ class NotificationListener : NotificationListenerService() {
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification) {
+        AppBadgeWidget.refresh(this)
         IconGlow.remove(this, sbn.key)
         if (sbn.packageName == packageName && sbn.notification.channelId == BadgeNotifications.CHANNEL_ID)
             BadgeNotifications.refreshLauncherCount(this)
@@ -474,13 +479,20 @@ class NotificationListener : NotificationListenerService() {
     override fun onListenerDisconnected() {
         super.onListenerDisconnected()
         if (instance == this) _instance = null
+        AppBadgeWidget.refresh(this)
         Logger.i("NotificationListener", "Listener disconnected")
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        if (_instance == this) _instance = null
+        AppBadgeWidget.refresh(this)
         if (Preferences.runInForeground)
             stopForeground(STOP_FOREGROUND_REMOVE)
         serviceJob.cancel()
     }
+
+    fun widgetBadgeCounts(filteredOnly: Boolean): Map<String, Int>? = try {
+        AppBadgeCounts.count(activeNotifications.toList(), filters, filteredOnly, packageName)
+    } catch (_: Exception) { null }
 }

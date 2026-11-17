@@ -1,0 +1,11 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/badge_item"
+    android:layout_width="52dp" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center">
+    <FrameLayout android:layout_width="48dp" android:layout_height="48dp">
+        <ImageView android:id="@+id/badge_icon" android:layout_width="40dp" android:layout_height="40dp" android:layout_gravity="bottom|start" />
+        <TextView android:id="@+id/badge_count" android:layout_width="wrap_content" android:layout_height="20dp"
+            android:minWidth="20dp" android:paddingHorizontal="3dp" android:layout_gravity="top|end" android:gravity="center"
+            android:textColor="#FFFFFF" android:textSize="12sp" android:textStyle="bold" android:background="@drawable/app_badge_circle" />
+    </FrameLayout>
+    <TextView android:id="@+id/badge_label" android:layout_width="match_parent" android:layout_height="20dp" android:visibility="gone"
+        android:gravity="center" android:textColor="#FFFFFF" android:textSize="11sp" android:maxLines="1" android:ellipsize="end" />
+</LinearLayout>
