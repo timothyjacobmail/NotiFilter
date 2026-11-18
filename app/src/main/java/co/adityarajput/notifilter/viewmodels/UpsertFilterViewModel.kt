@@ -48,22 +48,29 @@ class UpsertFilterViewModel(
         val priority: Int = 0,
         val cooldown: Long? = null,
         val matchCase: Boolean = true,
+        val allNotifications: Boolean = false,
     ) {
         constructor(filter: Filter) : this(
             filter.id, null, filter.app, filter.regexTarget,
             filter.regexPattern, filter.secondaryRegexPattern ?: "",
             filter.action, filter.schedule, filter.historyEnabled, filter.widgetEnabled,
             filter.priority, filter.cooldown, filter.matchCase,
+            filter.regexTarget == RegexTarget.OR && filter.regexPattern == ALL_NOTIFICATIONS_PATTERN,
         )
 
         fun toFilter() = Filter(
-            app, queryPattern, action, regexTarget,
-            if (regexTarget == RegexTarget.AND) secondaryQueryPattern else null,
+            app, if (allNotifications) ALL_NOTIFICATIONS_PATTERN else queryPattern, action,
+            if (allNotifications) RegexTarget.OR else regexTarget,
+            if (!allNotifications && regexTarget == RegexTarget.AND) secondaryQueryPattern else null,
             schedule, true, historyEnabled, widgetEnabled,
             if (filterId == 0) Int.MAX_VALUE else priority, if (cooldown == 0L) null else cooldown,
             id = filterId,
             matchCase = matchCase,
         )
+
+        companion object {
+            private const val ALL_NOTIFICATIONS_PATTERN = "(?s).*"
+        }
     }
 
     var state by mutableStateOf(
@@ -115,6 +122,7 @@ class UpsertFilterViewModel(
             FormPage.PACKAGE -> if (values.app == None) return FormError.BLANK_FIELDS
 
             FormPage.PATTERN -> {
+                if (values.allNotifications) return null
                 if (values.queryPattern.isBlank()) return FormError.BLANK_FIELDS
 
                 if (values.regexTarget != RegexTarget.EXPRESSION) {
@@ -158,7 +166,7 @@ class UpsertFilterViewModel(
         page: FormPage = state.page,
         values: Values = state.values,
     ): List<FormWarning> {
-        if (page != FormPage.PATTERN || values.notification == null) return listOf()
+        if (page != FormPage.PATTERN || values.notification == null || values.allNotifications) return listOf()
 
         try {
             val regexTarget = values.regexTarget

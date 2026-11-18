@@ -91,6 +91,9 @@
     <string name="package_name">Package name</string>
     <string name="package_name_placeholder">Search installed apps</string>
     <string name="pattern_page_title">Configure the matching method</string>
+    <string name="all_notifications_from_app">All notifications from this app</string>
+    <string name="all_notifications_from_all_apps">All notifications from all apps</string>
+    <string name="all_notifications_explanation">Match every notification, regardless of its title or content. Tap Next to choose an action.</string>
     <string name="search_text">Search in the notification\'s</string>
     <string name="title">title</string>
     <string name="content">content</string>

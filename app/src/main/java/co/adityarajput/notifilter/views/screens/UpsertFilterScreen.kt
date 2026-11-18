@@ -352,6 +352,31 @@ private fun PatternPage(viewModel: UpsertFilterViewModel) {
         style = MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.Normal,
     )
+    Row(
+        Modifier.fillMaxWidth().toggleable(viewModel.state.values.allNotifications) {
+            viewModel.updateForm(
+                viewModel.state.page,
+                viewModel.state.values.copy(allNotifications = it),
+            )
+        },
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Checkbox(viewModel.state.values.allNotifications, null)
+        Text(
+            stringResource(
+                if (viewModel.state.values.app == Any) R.string.all_notifications_from_all_apps
+                else R.string.all_notifications_from_app,
+            ),
+            style = MaterialTheme.typography.labelLarge,
+        )
+    }
+    if (viewModel.state.values.allNotifications) {
+        Text(
+            stringResource(R.string.all_notifications_explanation),
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        return
+    }
     Row(verticalAlignment = Alignment.CenterVertically) {
         RadioButton(
             viewModel.state.values.regexTarget != RegexTarget.EXPRESSION,
