@@ -49,7 +49,7 @@ class Repository(
         notificationDao.delete(notification)
     }
 
-    suspend fun deleteFilters() = filterDao.deleteAll()
+    suspend fun replaceFilters(filters: Array<Filter>) = filterDao.replaceAll(filters)
 
     suspend fun deleteNotifications() {
         Cache.intents.clear()

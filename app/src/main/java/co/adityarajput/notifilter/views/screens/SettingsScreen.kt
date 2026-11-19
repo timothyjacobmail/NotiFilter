@@ -34,7 +34,10 @@ import co.adityarajput.notifilter.utils.request
 import co.adityarajput.notifilter.viewmodels.AppearanceViewModel
 import co.adityarajput.notifilter.views.Brightness
 import co.adityarajput.notifilter.views.components.AppBar
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.IOException
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -208,6 +211,7 @@ fun SettingsScreen(
                         .padding(dimensionResource(R.dimen.padding_small)),
                 ) {
                     val importSuccess = stringResource(R.string.import_success)
+                    val importFailed = stringResource(R.string.import_failed)
                     val exportSuccess = stringResource(R.string.export_success)
                     val appNameAndVersion =
                         "${stringResource(R.string.app_name)}_${BuildConfig.VERSION_NAME}"
@@ -215,16 +219,25 @@ fun SettingsScreen(
                     val importLauncher = rememberLauncherForActivityResult(
                         ActivityResultContracts.OpenDocument(),
                     ) { uri ->
+                        if (uri == null) return@rememberLauncherForActivityResult
                         scope.launch {
-                            uri
-                                ?.let { context.contentResolver.openInputStream(it) }
-                                ?.use {
-                                    appContainer.import(it.bufferedReader().readText())
-                                    goBack()
-                                    Toast
-                                        .makeText(context, importSuccess, Toast.LENGTH_SHORT)
-                                        .show()
+                            val message = try {
+                                withContext(Dispatchers.IO) {
+                                    val json = context.contentResolver.openInputStream(uri)
+                                        ?.bufferedReader()?.use { it.readText() }
+                                        ?: throw IOException("Could not open the filter backup")
+                                    appContainer.import(json)
                                 }
+                                goBack()
+                                importSuccess
+                            } catch (_: IOException) {
+                                importFailed
+                            } catch (_: IllegalArgumentException) {
+                                importFailed
+                            } catch (_: SecurityException) {
+                                importFailed
+                            }
+                            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                         }
                     }
                     val exportLauncher = rememberLauncherForActivityResult(

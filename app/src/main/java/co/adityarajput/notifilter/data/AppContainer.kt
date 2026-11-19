@@ -18,8 +18,8 @@ class AppContainer(private val context: Context) {
         Json.encodeToString<List<Filter>>(repository.filters().first())
 
     suspend fun import(json: String) {
-        repository.deleteFilters()
-        repository.upsert(*Json.decodeFromString<Array<Filter>>(json))
+        val filters = Json.decodeFromString<Array<Filter>>(json)
+        repository.replaceFilters(filters)
     }
 
     fun seedDemoData() {

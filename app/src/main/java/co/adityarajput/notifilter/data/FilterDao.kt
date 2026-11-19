@@ -3,6 +3,7 @@ package co.adityarajput.notifilter.data
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Upsert
 import co.adityarajput.notifilter.data.models.Filter
 import kotlinx.coroutines.flow.Flow
@@ -29,4 +30,10 @@ interface FilterDao {
 
     @Query("DELETE FROM filters")
     suspend fun deleteAll()
+
+    @Transaction
+    suspend fun replaceAll(filters: Array<Filter>) {
+        deleteAll()
+        upsert(*filters)
+    }
 }
