@@ -7,3 +7,4 @@
 - Found that importing a malformed filter backup could clear saved filters before JSON validation failed. Decode first, replace the database contents in one transaction, read the input stream off the main thread, and report invalid or unreadable backups in Settings.
 - The debug build and existing JVM unit tests passed with the import fix.
 - Review the settings screen's periodic battery-optimization check and demo data's synchronous database path in a later pass.
+- Installed the debug APK at version code 47 in place. The installed hash matched the build and the launcher stayed running.
