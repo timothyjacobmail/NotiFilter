@@ -57,7 +57,20 @@ class ManualGlow private constructor(private val context: Context) : ContextWrap
     private var sizeDp = 100f
     private var ring: View? = null
     private var panel: View? = null
-    private var ringParams: WindowManager.LayoutParams? = null
+    private var placementTarget = ""
+    private val activeRings = mutableMapOf<Position, GlowView>()
+
+    private data class Position(val x: Float, val y: Float, val size: Float)
+    private fun savedPosition(target: String): Position? {
+        val prefs = IconGlow.preferences(this)
+        val prefix = when {
+            prefs.getBoolean("position_saved:$target", false) -> ":$target"
+            prefs.getBoolean("position_saved", false) -> ""
+            else -> return null
+        }
+        return Position(prefs.getFloat("x$prefix", 0.5f), prefs.getFloat("y$prefix", 0.5f),
+            prefs.getFloat("size$prefix", 100f))
+    }
     private val screenReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) { refreshGlow() }
     }
@@ -70,10 +83,10 @@ class ManualGlow private constructor(private val context: Context) : ContextWrap
     }
 
     private fun loadPosition() {
-        val prefs = IconGlow.preferences(this)
-        centerX = prefs.getFloat("x", 0.5f)
-        centerY = prefs.getFloat("y", 0.5f)
-        sizeDp = prefs.getFloat("size", 100f)
+        val position = savedPosition(placementTarget) ?: Position(0.5f, 0.5f, 100f)
+        centerX = position.x
+        centerY = position.y
+        sizeDp = position.size
     }
     private fun dimensions(): Pair<Int, Int> {
         val metrics = android.util.DisplayMetrics()
@@ -83,8 +96,10 @@ class ManualGlow private constructor(private val context: Context) : ContextWrap
     }
     private fun dp(value: Float) = (value * resources.displayMetrics.density).toInt()
 
-    fun beginPlacement() {
+    fun beginPlacement(target: String) {
         handler.post {
+            removeWindows()
+            placementTarget = target
             loadPosition()
             placing = true
             startActivity(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
@@ -98,22 +113,17 @@ class ManualGlow private constructor(private val context: Context) : ContextWrap
             val unlocked = !getSystemService(KeyguardManager::class.java).isKeyguardLocked && getSystemService(PowerManager::class.java).isInteractive
             val homeVisible = isHomeVisible()
             schedulePoll()
-            val visible = homeVisible && android.provider.Settings.canDrawOverlays(this) && unlocked && width < height && (placing || (IconGlow.isActive(this) && IconGlow.preferences(this).getBoolean("position_saved", false)))
+            val visible = homeVisible && android.provider.Settings.canDrawOverlays(this) && unlocked && width < height && (placing || IconGlow.isActive(this))
             if (!visible) { removeWindows(); return@post }
             try {
                 val size = dp(sizeDp)
-                val params = WindowManager.LayoutParams(size, size, WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
-                        (if (placing) 0 else WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE), PixelFormat.TRANSLUCENT).apply {
-                    gravity = Gravity.TOP or Gravity.LEFT
-                    x = (centerX * width - size / 2).toInt().coerceIn(0, (width - size).coerceAtLeast(0))
-                    y = (centerY * height - size / 2).toInt().coerceIn(0, (height - size).coerceAtLeast(0))
-                    alpha = 0.7f
-                    title = "NotiFilter pulsing icon glow"
+                if (!placing) {
+                    updateActiveRings(width, height)
+                    return@post
                 }
-                ringParams = params
+                val params = ringLayout(Position(centerX, centerY, sizeDp), width, height, editable = true)
                 if (ring == null) {
-                    ring = GlowView(this)
+                    ring = GlowView(this, IconGlow.speed(this, placementTarget))
                     ring!!.setOnTouchListener(object : View.OnTouchListener {
                         var startX = 0f; var startY = 0f; var oldX = 0f; var oldY = 0f
                         override fun onTouch(view: View, event: MotionEvent): Boolean {
@@ -140,6 +150,40 @@ class ManualGlow private constructor(private val context: Context) : ContextWrap
         }
     }
 
+    private fun ringLayout(position: Position, width: Int, height: Int, editable: Boolean): WindowManager.LayoutParams {
+        val size = dp(position.size)
+        val flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
+        return WindowManager.LayoutParams(size, size, WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+            if (editable) flags else flags or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE, PixelFormat.TRANSLUCENT).apply {
+            gravity = Gravity.TOP or Gravity.LEFT
+            x = (position.x * width - size / 2).toInt().coerceIn(0, (width - size).coerceAtLeast(0))
+            y = (position.y * height - size / 2).toInt().coerceIn(0, (height - size).coerceAtLeast(0))
+            alpha = 0.7f
+            title = "NotiFilter pulsing icon glow"
+        }
+    }
+
+    private fun updateActiveRings(width: Int, height: Int) {
+        // Legacy filters retain the previously shared spot until individually repositioned.
+        val positions = IconGlow.activeTargets(this).sorted().mapNotNull { target ->
+            savedPosition(target)?.let { it to IconGlow.speed(this, target) }
+        }.toMap()
+        val obsolete = activeRings.keys - positions.keys
+        obsolete.forEach { position -> windows.removeView(activeRings.remove(position)) }
+        positions.forEach { (position, speed) ->
+            val params = ringLayout(position, width, height, editable = false)
+            val existing = activeRings[position]
+            if (existing == null || existing.speed != speed) {
+                existing?.let { windows.removeView(it) }
+                val view = GlowView(this, speed)
+                windows.addView(view, params)
+                activeRings[position] = view
+            } else if ((existing.layoutParams as WindowManager.LayoutParams).let {
+                    it.x != params.x || it.y != params.y || it.width != params.width
+                }) windows.updateViewLayout(existing, params)
+        }
+    }
+
     private fun showControls() {
         val layout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -155,7 +199,7 @@ class ManualGlow private constructor(private val context: Context) : ContextWrap
         button(R.string.glow_smaller) { sizeDp = (sizeDp - 8).coerceAtLeast(56f); refreshGlow() }
         button(R.string.glow_larger) { sizeDp = (sizeDp + 8).coerceAtMost(200f); refreshGlow() }
         button(R.string.glow_save) {
-            IconGlow.preferences(this).edit().putFloat("x", centerX).putFloat("y", centerY).putFloat("size", sizeDp).putBoolean("position_saved", true).apply()
+            IconGlow.preferences(this).edit().putFloat("x:$placementTarget", centerX).putFloat("y:$placementTarget", centerY).putFloat("size:$placementTarget", sizeDp).putBoolean("position_saved:$placementTarget", true).apply()
             placing = false
             removeWindows()
             startActivity(Intent(this, co.adityarajput.notifilter.MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
@@ -172,14 +216,16 @@ class ManualGlow private constructor(private val context: Context) : ContextWrap
     }
 
     private fun removeWindows() {
+        activeRings.values.forEach { runCatching { windows.removeView(it) } }
+        activeRings.clear()
         ring?.let { runCatching { windows.removeView(it) } }; ring = null
         panel?.let { runCatching { windows.removeView(it) } }; panel = null
     }
-    private class GlowView(context: Context) : View(context) {
+    private class GlowView(context: Context, val speed: GlowSpeed) : View(context) {
         private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
         private var colorMix = 0f
         private val pulse = android.animation.ValueAnimator.ofFloat(0f, 1f).apply {
-            duration = 1200L
+            duration = speed.halfCycleMillis
             repeatCount = android.animation.ValueAnimator.INFINITE
             repeatMode = android.animation.ValueAnimator.REVERSE
             interpolator = android.view.animation.AccelerateDecelerateInterpolator()

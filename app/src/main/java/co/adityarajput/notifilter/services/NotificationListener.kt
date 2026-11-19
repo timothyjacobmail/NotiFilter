@@ -169,7 +169,7 @@ class NotificationListener : NotificationListenerService() {
         serviceScope.launch { TextToSpeech.initialize(this@NotificationListener) }
         requestListenerHints(0)
         BadgeNotifications.refreshLauncherCount(this)
-        IconGlow.retain(this, activeNotifications.map { it.key }.toSet())
+        IconGlow.reconnect(this, activeNotifications.associate { it.key to it.packageName })
         if (IconGlow.isActive(this)) ManualGlow.get(this).refreshGlow()
     }
 
@@ -303,7 +303,7 @@ class NotificationListener : NotificationListenerService() {
                 requestListenerHints(0)
             }
 
-            is Action.GLOW -> IconGlow.record(this, sbn.key)
+            is Action.GLOW -> IconGlow.record(this, sbn.key, filter.app.packageName)
 
             is Action.BADGE -> {
                 BadgeNotifications.post(this, sbn.key, notification.title.ifBlank { filter.app.name }, notification.content)

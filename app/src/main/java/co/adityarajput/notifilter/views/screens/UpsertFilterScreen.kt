@@ -32,6 +32,7 @@ import androidx.compose.ui.text.fromHtml
 import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import co.adityarajput.notifilter.R
 import co.adityarajput.notifilter.data.models.*
@@ -577,7 +578,22 @@ private fun ColumnScope.ActionPage(viewModel: UpsertFilterViewModel) {
         }) { Text(stringResource(R.string.badge_settings)) }
     }
     if (viewModel.state.values.action is Action.GLOW) {
+        val target = viewModel.state.values.app.packageName
+        var speed by remember(target) { mutableStateOf(IconGlow.speed(context, target)) }
         Text(stringResource(R.string.glow_advice), style = MaterialTheme.typography.bodySmall)
+        Text(stringResource(R.string.glow_speed), style = MaterialTheme.typography.labelLarge)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            GlowSpeed.entries.forEach { option ->
+                FilterChip(
+                    selected = speed == option,
+                    onClick = {
+                        speed = option
+                        IconGlow.setSpeed(context, target, option)
+                    },
+                    label = { Text(stringResource(option.label)) },
+                )
+            }
+        }
         if (!context.isGranted(Permission.OVERLAY)) {
             OutlinedButton({ context.request(Permission.OVERLAY) }) {
                 Text(stringResource(R.string.glow_enable))
@@ -587,11 +603,11 @@ private fun ColumnScope.ActionPage(viewModel: UpsertFilterViewModel) {
             OutlinedButton({ context.request(Permission.USAGE_ACCESS) }) { Text(stringResource(R.string.glow_usage_enable)) }
         }
         if (context.isGranted(Permission.OVERLAY) && context.isGranted(Permission.USAGE_ACCESS)) {
-            OutlinedButton({ ManualGlow.get(context).beginPlacement() }) {
+            OutlinedButton({ ManualGlow.get(context).beginPlacement(target) }) {
                 Text(stringResource(R.string.glow_place))
             }
         }
-        OutlinedButton({ IconGlow.clear(context) }) { Text(stringResource(R.string.glow_clear)) }
+        OutlinedButton({ IconGlow.clearTarget(context, target) }) { Text(stringResource(R.string.glow_clear)) }
     }
     Action.entries.forEach {
         Row(
